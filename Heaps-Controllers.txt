@@ -1,0 +1,72 @@
+<?php
+
+/**
+ * Psuedo-code inside class methods.
+ */
+class MagicAccountController {
+	
+	private $persistentDataStorage;
+	
+	/**
+	 * US-MA-2 user-story controller.
+	 * 
+	 * @return HTTPResponse The HTTP Response (for PHP, ideally a Request/Response implementing https://www.php-fig.org/psr/psr-7/).
+	 */
+	public function userMakeDeposit(Request $request, MagicAccount $account, float $depositAmount, ?User $accountOwner){
+		// Validation logic below.
+		IF $accountOwner is NULL THEN set $accountOwner to the current session user;
+		//@see US-MA-1.
+		IF the requested $account is not fetchable from $persistentDataStorage THEN return HTTP-Response with HTTP-Code for invalid argument (HTTP-400);
+		IF the requested $account is not owned by the $accountOwner THEN return HTTP-Response with HTTP-Code HTTP-Code for ACCESS_DENIED (HTTP-403);
+		IF the requested $depositAmount is not a positive float THEN return HTTP-Response with HTTP-Code for invalid argument (HTTP-400);
+		
+		IF($this->depositValidator($account)) {
+    		// Update the deposit for the $account in persistent-storage.
+	    	PERSIST the $depositAmount to the $account in $persistentDataStorage;
+		}
+		
+		// Return the updated $account, reflecting the new deposit being made.
+		RETURN $account as a HTTP-Response using the same Content-Type as that issued in the user $request;
+	}
+	
+	/**
+	 *
+	 * @return bool Whether validation of deposit-constraints was succesful or failed.
+	 */ 
+	private function depositValidator($account, $depositAmount) {
+		$valid = FALSE;
+		$account_balance = $account-deposits subtracting $account-withdrawals;
+		$today_sum_deposits = sum of $account-deposits with datetime = today;
+		
+		// Do a validation for $account validation constraints.
+		// @see: US-MA-6
+		$valid = IF ($account_balance + $depositAmount <= 500.00) THEN TRUE;
+		
+		// @see: US-MA-7
+		// Sidenote, to ensure that there is an exact deposit of 100kr. per day made, or none at all -
+		// the strict reading of the definition of US-MA-7, there will need to be a scheduled task run,
+		// to delete deposits every end-of-day, paying users back into their credit card accounts, whenver their SUM deposits for that day past do not equal 100kr.
+		$valid = IF ($today_sum_deposits + $depositAmount <= 100.00) THEN TRUE;
+		
+		retun $valid;
+	}
+	
+	
+	/**
+	 * US-MA-5 user-story controller. 
+	 * 
+	 * @return HTTPResponse The HTTP Response (for PHP, ideally a Request/Response implementing https://www.php-fig.org/psr/psr-7/).
+	 */
+	public function userAccountPayout(MagicAccount $account, float $payoutAmount){
+		$account_balance = $account-deposits subtracting $account-withdrawals;
+		IF the requested $account is not a registered magic-account THEN return HTTP-Response with HTTP-Code for ACCESS_DENIED (HTTP-403);
+		IF the requested $payoutAmount is not a positive float THEN return HTTP-Response with HTTP-Code for invalid argument;
+		IF the requested $payoutAmount is greater than the $account_balance THEN return HTTP-Response with HTTP-Code for invalid argument;
+		PERSIST the $payoutAmount as a withdrawal;
+		PAYOUT the amout requested to the $account owner (user), optionally cretting to the credit-card;
+		
+		// Return the updated $account, reflecting the new withdrawal being made.
+		return $account as a HTTP-Response using the same Content-Type as that issued in the user $request;
+	}
+	
+}
