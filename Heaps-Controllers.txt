@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Psuedo-code inside class methods.
+ * Pseudo-code inside class methods. eeven though having a php opening tag, php style variables methods, comments and such, this is not a runnable php script.
  */
 class MagicAccountController {
 	
